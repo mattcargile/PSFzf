@@ -73,11 +73,16 @@ function Invoke-FuzzyEdit()
     if ($files.Count -gt 0) {
         try {
             if ($Directory) {
-                $prevDir = $PWD.Path
+                $prevDir = $PWD.ProviderPath
                 cd $Directory
             }
             # Not sure if being passed relative or absolute path
-            $fileList = '"{0}"' -f ( (Resolve-Path $files) -join '" "' )
+            $fileList = '"{0}"' -f ( (Resolve-Path $files).ProviderPath -join '" "' )
+            # Avoids code.cmd "error" message by not calling cmd.exe from a UNC $PWD
+            if( ([uri]$PWD.ProviderPath).IsUnc ) {
+                if (-not $prevDir) { $prevDir = $PWD.ProviderPath }
+                cd $HOME
+            }
             Invoke-Expression -Command ("$editor $editorOptions $fileList")
         }
         catch {

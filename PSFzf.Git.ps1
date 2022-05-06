@@ -14,7 +14,7 @@ function SetGitKeyBindings($enable)
     if ($enable)
     {
         if ($null -eq $gitPath) {
-            $gitInfo = Get-Command git.exe -ErrorAction SilentlyContinue
+            $gitInfo = Get-Command git.exe -CommandType Application -ErrorAction SilentlyContinue
             if ($null -ne $gitInfo) {
                 $script:gitPathLong = Split-Path (Split-Path $gitInfo.Source -Parent) -Parent
 
@@ -29,11 +29,11 @@ function SetGitKeyBindings($enable)
             }
         }
         if (Get-Command Set-PSReadLineKeyHandler -ErrorAction SilentlyContinue) {
-            @('ctrl+g,ctrl+f','Select Git files via fzf', {Invoke-PsFzfGitFiles}), `
-            @('ctrl+g,ctrl+s','Select Git hashes via fzf', {Invoke-PsFzfGitHashes}), `
-            @('ctrl+g,ctrl+b','Select Git branches via fzf', {Invoke-PsFzfGitBranches}) | ForEach-Object {
+            @('ctrl+g,ctrl+f', 'Fzf Git Files', 'Select Git files via fzf', {Invoke-PsFzfGitFiles}), `
+            @('ctrl+g,ctrl+s', 'Fzf Git Hashes', 'Select Git hashes via fzf', {Invoke-PsFzfGitHashes}), `
+            @('ctrl+g,ctrl+b', 'Fzf Git Branches', 'Select Git branches via fzf', {Invoke-PsFzfGitBranches}) | ForEach-Object {
                 $script:GitKeyHandlers += $_[0]
-                Set-PSReadLineKeyHandler -Chord $_[0] -Description $_[1] -ScriptBlock $_[2]
+                Set-PSReadLineKeyHandler -Chord $_[0] -BriefDescription $_[1] -Description $_[2] -ScriptBlock $_[3]
             }
         } else {
             Write-Error "Failed to register git key bindings - PSReadLine module not loaded"

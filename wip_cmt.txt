@@ -1,0 +1,53 @@
+- set VS Code settings to remove trailing whitespace
+
+Fix: UNC Handling and Optimize Invoke-FuzzyEdit
+
+Added script:DefaultFileSystemCmdUnc to Get-FileSystemCmd to pushd to
+UNC path prior to calling dir.
+
+For Invoke-FuzzyEdit, removed redundant try/catch block after grabbing files.
+Replaced files += array pattern. Moved all code into try block and added
+logic to bail out if $files is empty. Removing $files empty declaration
+and changing to $null check on $files from .Count check.
+Adding final check for $PWD at UNC to avoid code.cmd/cmd.exe throwing
+the UNC message.
+
+Fix: UNC Handling for FZF_DEFAULT_COMMAND
+
+Add helper Cmd $script variables to handle case when
+user is using FZF_DEFAULT_COMMAND. Assuming users may
+have a custom DOS dir command within this environment variable.
+Add helper variables to Get-FileSystemCmd to resolve path and
+check if path is UNC.
+
+Bug fix for Invoke-FuzzyEdit when user pass in a directory and the
+original $PWD wasn't changed back.
+
+Fix: Base FileSystemCmd variables
+
+Reformatting and removing unecessary backticks.
+Fixing variable refactor bug on ProviderPath in Get-FileSystemCmd.
+
+Formatting: Hopefully more readable UNC variables in Get-FileSystemCmd.
+
+Prefix and Postfix variables created for code reuse. Changed to use
+cmdlet name
+instead of the alias to prevent confusion with the "DOS" variants.
+
+Fix: UNC Logic
+
+Adding IsUnc property to Unc checks.
+
+Fix: Default ALT C Behavior When PWD is UNC
+
+Removing unecessary script Unc variable. Converting to use
+internal function variable $cmdUnc. ALT C behavior was
+returning path to files instead of directories. Adding
+the DefaultFileSystemCmdUncPrefix to to the final output
+
+Updating variables for readability.
+
+feat: Invoke-FuzzyEdit: Remove ForEach-Object in $files var.
+
+Not necessary as Invoke-Fzf already returns an [object[]].
+Also prevents another round through the pipeline

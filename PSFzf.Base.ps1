@@ -12,7 +12,10 @@ dir /s/b "{0}"
 "@
 	$script:DefaultFileSystemCmdDirOnly = @"
 dir /s/b/ad "{0}"
-"@
+"@ 
+	# For UNC, cmd requires a pushd to create the virtual directory.
+	# Need additional backticks to handle powershell parser otherwise the dir Alias is used
+	$script:DefaultFileSystemCmdUncPrefix = 'pushd "{0}" `&`&'
 } else {
 	$script:ShellCmd = '/bin/sh -c "{0}"'
 	$script:DefaultFileSystemCmd = @"
@@ -39,6 +42,12 @@ $script:AltCCommand = [ScriptBlock]{
 function Get-FileSystemCmd
 {
 	param($dir, [switch]$dirOnly = $false)
+	$dirPPath = (Resolve-Path $dir).ProviderPath
+	$IsUnc = [boolean]([uri]$dirPPath).IsUnc
+	# Wrapping Cmd.exe in try/catch due to cmd.exe's lack of UNC support
+	$poshPrefixUnc = 'try { Push-Location $HOME;'
+	$poshPostfixUnc = '} catch { } finally { Pop-Location }'
+	
 	# Note that there is no way to know how to list only directories using
 	# FZF_DEFAULT_COMMAND, so we never use it in that case.
 	if ($dirOnly -or [string]::IsNullOrWhiteSpace($env:FZF_DEFAULT_COMMAND)) {
@@ -53,10 +62,16 @@ function Get-FileSystemCmd
 			if ($dirOnly) {
 				$cmd = $script:DefaultFileSystemCmdDirOnly
 			}
-			$script:ShellCmd -f ($cmd -f $dir)
+			$cmdUnc = "$script:DefaultFileSystemCmdUncPrefix $cmd"
+			if (-not $IsUnc) { $script:ShellCmd -f ($cmd -f $dir) }
+			else { "$poshPrefixUnc $($script:ShellCmd -f ($cmdUnc -f $dirPPath)) $poshPostfixUnc" }
 		}
 	} else {
-		$script:ShellCmd -f ($env:FZF_DEFAULT_COMMAND -f $dir)
+		if (-not $IsUnc) { $script:ShellCmd -f ($env:FZF_DEFAULT_COMMAND -f $dir) }
+		else { 
+			$fzfDefUncCmd = "$script:DefaultFileSystemCmdUncPrefix $env:FZF_DEFAULT_COMMAND"
+			"$poshPrefixUnc $($script:ShellCmd -f ( $fzfDefUncCmd -f $dirPPath)) $poshPostfixUnc" 
+		}
 	}
 }
 
